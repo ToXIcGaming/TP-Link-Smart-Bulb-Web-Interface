@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+   <head>
+      <title>TP-Link Smart Bulb Web Control</title>
+      <meta charset="utf-8">
+		<link rel="stylesheet" href="styles.css">
+   </head>
+   <body>
+		 <h1>TP-Link Smart Bulb Web Control</h1>	 
+		 <p id="buttonCount"></p>
+		 <button onclick="buttonClickedOn()">On</button>
+		 <button onclick="buttonClickedOff()">Off</button>
+		 <button onclick="buttonClickedScan()">Scan</button>
+		 <input type="text" name="hext" id="hext" value="software engineer">
+		 <button onclick="buttonClickedHex()">Hex</button>
+		 <script src="/socket.io/socket.io.js"></script>
+		 <script>
+			 var socket = io.connect();
+			 
+			  socket.on('news', function (data) {
+    console.log(data);
+    socket.emit('my other event', { my: 'data' });
+  });
+			 
+			 function buttonClickedOn(){
+			   socket.emit('on');
+			 }
+
+			 function buttonClickedOff(){
+			   socket.emit('off');
+			 }
+			 
+			 function buttonClickedScan(){
+			   socket.emit('scan');
+			 }
+			 
+			 function buttonClickedHex(){
+			 var hext = document.getElementById("hext").value;
+			 socket.emit('hex', { hex: hext });
+			 }
+			 
+			 
+			 //when we receive buttonUpdate, do this
+			 socket.on('buttonUpdate', function(data){
+				 document.getElementById("buttonCount").innerHTML = 'The light is ' + data + '.';
+			 });
+		</script>
+   </body>
+</html>
