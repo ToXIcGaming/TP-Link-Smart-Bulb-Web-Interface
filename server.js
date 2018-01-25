@@ -4,10 +4,11 @@ const TPLSmartDevice = require('tplink-lightbulb')
 var app = express();  
 var server = require('http').createServer(app); 
 var io = require('socket.io')(server); 
-var hexToHsl = require('hex-to-hsl');
+var colorsys = require('colorsys')
 
-//keep track of how times clients have clicked the button
-var clickCount = 0;
+var bip = ''; // Enter the bulbs IP - You can find this using your router or the scan command on Konsumer's tplink-lightbulb API.
+
+var bbrightness = 100;
 
 app.use(express.static(__dirname + '/public')); 
 //redirect / to our index.html file
@@ -21,38 +22,39 @@ io.on('connection', function(client) {
     client.on('on', function(data) {
 		console.log('');
 		console.log('On');
-    	  //clickCount++;
-		  //send a message to ALL connected clients
-		  //io.emit('buttonUpdate', clickCount);#
-		  io.emit('buttonUpdate', 'On');
+
+		  io.emit('lightstatusup', 'On');
+		  
+		const bulb = new TPLSmartDevice(bip)
+		var brightnum = Number(bbrightness);
+		bulb.power(true, 0, {brightness: brightnum})
+		//bulb.power(true, 0, {hue: color.h, saturation: color.s, brightness: color.l, color_temp: 0})
 		  
     });
 
     client.on('off', function(data) {
 		console.log('');
 		console.log('Off');
-		
-    	  //clickCount++;
-		  //send a message to ALL connected clients
-		  io.emit('buttonUpdate', 'Off');
-		  // turn first discovered light off
-		  
-		
-		
+
+		  io.emit('lightstatusup', 'Off');
+		  const bulb = new TPLSmartDevice(bip)
+		  bulb.power(false, 0)
+
 		});
 
 	client.on('scan', function(data) {
 		console.log('');
 		console.log('Scanning');
 		
-    	  //clickCount++;
-		  //send a message to ALL connected clients
-		  //io.emit('buttonUpdate', 'Off');
-		  // turn first discovered light off
+		// turn first discovered light off
 		const scan = TPLSmartDevice.scan()
-		console.log(scan)
-		scan.stop()
-		
+		.on('light', light => {
+			light.power(false)
+			.then(status => {
+				console.log(status)
+				scan.stop()
+			})
+		})
 		
 		});
 		
@@ -60,16 +62,23 @@ io.on('connection', function(client) {
 		console.log('');
 		console.log('Colour given:');
 		console.log('Hex: ' + data.hex);
-		const color = hexToHsl(data.hex)
-		console.log('Hsl: ' + color);
+		const color = colorsys.hexToHsl(data.hex)
+		//console.log('Hsl: ' + color.l);
+		console.log('Brightness Given: ' + data.brightness);
+		bbrightness = data.brightness;
+		console.log('Var Brightness: ' + bbrightness);
+		var brightnum = Number(bbrightness);
 		
 		console.log('');
 		console.log('Sending to Bulb');
-		const bulb = new TPLSmartDevice('')
-		bulb.power(true, 0, {hue: color.h, saturation: color.s, brightness: color.l, color_temp: 0})
-		
+		const bulb = new TPLSmartDevice(bip)
+		bulb.power(true, 0,{hue: color.h, saturation: color.s, brightness: brightnum, color_temp: 0})
+		//.then(status => {
+		//	console.log(status)
+		//})
+		//.catch(err => console.error(err))
+
 		});
-		
 		
 });
 
